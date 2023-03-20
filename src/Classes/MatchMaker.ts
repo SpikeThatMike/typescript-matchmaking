@@ -29,7 +29,7 @@ class MatchMaker {
 
         const allGroups: Array<Array<Player | Party>> = this.GroupQueue(queue);
 
-        const playableGroups = allGroups.filter((g: Array<Player | Party>) => g.length == 10);
+        const playableGroups = allGroups.filter((g: Array<Player | Party>) => g.length == this._options.maxPlayers);
         if(playableGroups.length == 0)
             return;
         
@@ -82,31 +82,47 @@ class MatchMaker {
 	}
 
     private SplitGroup(group: Array<Player | Party>): Array<Array<Player | Party>> | null {
-        let bestMatch: Array<Array<Player | Party>> = [[], []];
         const newArray: Array<Player | Party> = [...group];
-        let attempts: number = 0;
+        let attempts: number[] = [];
 
         while (true) {
-            if(attempts >= this._options.maxTeamSize)
-                return null;
-            attempts++;
+            if(this.AreEqual(newArray, group) && attempts.length > 0)
+                break;
+
             const teamA = newArray.slice(0, newArray.length / this._options.maxTeams);
             const teamB = newArray.slice(newArray.length / this._options.maxTeams, newArray.length);
     
-            if((teamA.reduce((a: number, b: Player | Party) => a + b.Rating, 0) - this._options.ratingTeamRange) > teamB.reduce((a: number, b: Player | Party) => a + b.Rating, 0)
-                || (teamB.reduce((a: number, b: Player | Party) => a + b.Rating, 0) - this._options.ratingTeamRange) > teamA.reduce((a: number, b: Player | Party) => a + b.Rating, 0)
-            ) {
-                const shiftValue: Player | Party = newArray.shift()!;
-                newArray.push(shiftValue);
-                continue;
-            }
-
-            bestMatch = [teamA, teamB];
-            break;
+            const difference: number = Math.abs(teamA.reduce((a: number, b: Player | Party) => a + b.Rating, 0) - teamB.reduce((a: number, b: Player | Party) => a + b.Rating, 0));
+            attempts.push(difference);
+            
+            const shiftValue: Player | Party = newArray.shift()!;
+            newArray.push(shiftValue);
         }
 
-        return bestMatch;
+        const minIndex: number = attempts.indexOf(Math.min(...attempts));
+        if(minIndex == -1)
+            return null;
+        
+        const bestArray: Array<Player | Party> = [...group.slice(minIndex, group.length), ...group.slice(0, minIndex)];
+
+        const teamA = bestArray.slice(0, bestArray.length / this._options.maxTeams);
+        const teamB = bestArray.slice(bestArray.length / this._options.maxTeams, bestArray.length);
+
+        if(Math.abs(teamA.reduce((a: number, b: Player | Party) => a + b.Rating, 0) - teamB.reduce((a: number, b: Player | Party) => a + b.Rating, 0)) > this._options.ratingTeamRange)
+            return null;
+            
+        return [teamA, teamB];
     }
+
+    private AreEqual(array1: Array<Player | Party>, array2: Array<Player | Party>): boolean {
+        if (array1.length != array2.length) 
+            return false;
+        return array1.every((element, index) => {
+            if (element != array2[index])
+                return false;
+            return true;
+        });
+    };
 }
 
 export default MatchMaker;

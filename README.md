@@ -4,3 +4,5 @@ Experimental matchmaking using typescript. Project is in progress, currently it 
 At the moment, parties dont work, only individual players. However I plan to fully implement this in the future
 
 If you copy/use this code please credit SpikeThatMike#6397 & https://github.com/SpikeThatMike
+
+If you want to contribute, please DM me on discord, SpikeThatMike#6397 or make an issue/pull request
